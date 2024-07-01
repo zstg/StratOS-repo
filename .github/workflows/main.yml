@@ -19,33 +19,40 @@ jobs:
       options: --privileged
 
     steps:
-      - name: Checkout repository using git
+      - name: Checkout repository using actions/checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Arch Linux environment
         run: |
           pacman -Syu --noconfirm
           pacman -S sudo --noconfirm
           echo -e "\n[StratOS-repo]\nSigLevel = Optional TrustAll\nServer = https://StratOS-Linux.github.io/StratOS-repo/x86_64" | sudo tee -a /etc/pacman.conf
           sudo sed -i 's/purge debug/purge !debug/g' /etc/makepkg.conf
-          sudo pacman -Syy python-clickgen gtk-update-icon-cache ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
-          git clone https://github.com/zstg/StratOS-repo
+          sudo pacman -Syy python-clickgen gtk-update-icon-cache 
+          # ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
+          # git clone https://github.com/zstg/StratOS-repo
+
       - name: Create dummy user for makepkg
         run: |
             sudo useradd -m builder -s /bin/bash
             sudo usermod -aG wheel builder
             echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
+
       - name: Build and package software
         run: |
             dir="$(pwd)"/StratOS-repo
-            rm -rf $dir/x86_64/**
-            PACKAGES=("bibata-cursor-theme" ) # "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin") # calamares-git
+            rm -rf $dir/x86_64/**.** $dir/x86_64/**
+            PACKAGES=("bibata-cursor-theme") # "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin") # calamares-git
             for i in "${PACKAGES[@]}"; do
                 git clone https://aur.archlinux.org/$i
                 sudo chmod -R 777 ./$i
                 cd $i
-                sudo -u builder makepkg -cf --noconfirm
+                sudo -u builder makepkg -cfs --noconfirm
                 mv *.pkg.tar.zst $dir/x86_64/
                 cd ..
                 rm -rf $i
             done
+
       - name: Initialize and push
         env: 
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,4 +65,4 @@ jobs:
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git add .
             git commit -am "Update packages"
-            git push
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/zstg/StratOS-repo.git"
