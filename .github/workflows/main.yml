@@ -19,6 +19,12 @@ jobs:
       options: --privileged
 
     steps:
+      - name: Create dummy user for makepkg
+        run: |
+            sudo useradd -m builder -s /bin/bash
+            sudo usermod -aG wheel builder
+            echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
+
       - name: Checkout repository using git
         run: |
           pacman -Syu --noconfirm
@@ -26,24 +32,20 @@ jobs:
           echo -e "\n[StratOS-repo]\nSigLevel = Optional TrustAll\nServer = https://StratOS-Linux.github.io/StratOS-repo/x86_64" | sudo tee -a /etc/pacman.conf
           sudo sed -i 's/purge debug/purge !debug/g' /etc/makepkg.conf
           sudo pacman -Syy python-clickgen ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
-
-      - name: Create dummy user for makepkg
-        run: |
-          sudo useradd -m builder -s /bin/bash
-          sudo usermod -aG wheel builder
-          echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
+          git clone https://github.com/zstg/StratOS-repo
 
       - name: Build and package software
         run: |
-            dir="$(pwd)"
+            dir="$(pwd)"/StratOS-repo
             PACKAGES=("bibata-cursor-theme" "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin") # calamares-git
             for i in "${PACKAGES[@]}"; do
-            git clone https://aur.archlinux.org/$i
-            sudo chmod -R 777 ./$i
-            cd $i
-            sudo -u builder makepkg -cf --noconfirm
-            mv *.pkg.tar.zst $dir/x86_64/
-            cd ..
+                git clone https://aur.archlinux.org/$i
+                sudo chmod -R 777 ./$i
+                cd $i
+                sudo -u builder makepkg -cf --noconfirm
+                mv *.pkg.tar.zst $dir/x86_64/
+                cd ..
+                rm -rf $i
             done
 
     #   - name: Initialize and push
