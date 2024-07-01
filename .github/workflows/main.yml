@@ -19,12 +19,6 @@ jobs:
       options: --privileged
 
     steps:
-      - name: Create dummy user for makepkg
-        run: |
-            sudo useradd -m builder -s /bin/bash
-            sudo usermod -aG wheel builder
-            echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
-
       - name: Checkout repository using git
         run: |
           pacman -Syu --noconfirm
@@ -33,6 +27,12 @@ jobs:
           sudo sed -i 's/purge debug/purge !debug/g' /etc/makepkg.conf
           sudo pacman -Syy python-clickgen ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
           git clone https://github.com/zstg/StratOS-repo
+
+      - name: Create dummy user for makepkg
+        run: |
+            sudo useradd -m builder -s /bin/bash
+            sudo usermod -aG wheel builder
+            echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
 
       - name: Build and package software
         run: |
