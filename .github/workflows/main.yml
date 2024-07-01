@@ -35,6 +35,7 @@ jobs:
       - name: Build and package software
         run: |
             dir="$(pwd)"/StratOS-repo
+            rm -rf $dir/x86_64/**
             PACKAGES=("bibata-cursor-theme" ) # "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin") # calamares-git
             for i in "${PACKAGES[@]}"; do
                 git clone https://aur.archlinux.org/$i
