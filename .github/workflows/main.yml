@@ -1,0 +1,58 @@
+name: Build and Release Calamares
+
+on:
+  push:
+    branches:
+      - dev
+  # schedule:
+  #   - cron: '0 0 * * *'  # Schedule to run every day at 12 AM UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions: 
+      contents: write
+      pull-requests: write
+      repository-projects: write
+    container:
+      image: archlinux/archlinux:latest
+      options: --privileged
+
+    steps:
+      - name: Checkout repository using git
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S sudo --noconfirm
+          echo -e "\n[StratOS-testing]\nSigLevel = Optional TrustAll\nServer = https://zstg.github.io/StratOS-repo/x86_64" | sudo tee -a /etc/pacman.conf
+          sudo sed -i 's/purge debug/purge !debug' /etc/makepkg.conf
+          sudo pacman -Syy ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
+
+      - name: Create dummy user for makepkg
+        run: |
+          sudo useradd -m builder -s /bin/bash
+          sudo usermod -aG wheel builder
+          echo '%wheel ALL=(ALL) NOPASSWD:ALL' | sudo tee -a /etc/sudoers
+
+      - name: Build and package software
+        run: |
+            PACKAGES=("calamares-git" "bibata-cursor-theme" "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin")
+            for i in "${PACKAGES[@]}"; do
+            git clone https://aur.archlinux.org/$i
+            sudo chmod -R 777 ./$i
+            cd $i
+            sudo -u builder makepkg -cf --noconfirm
+            mv *.pkg.tar.zst ../x86_64/$i.pkg.tar.zst
+            cd ..
+            done
+
+      - name: Initialize and push
+        env: 
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+            chmod +x ./initialize.sh
+            ./initialize.sh
+            git config --global user.name 'github-actions[bot]'
+            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+            git add .
+            git commit -am "Update packages"
+            git push
