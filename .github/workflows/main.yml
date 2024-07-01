@@ -24,7 +24,7 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S sudo --noconfirm
           echo -e "\n[StratOS-testing]\nSigLevel = Optional TrustAll\nServer = https://zstg.github.io/StratOS-repo/x86_64" | sudo tee -a /etc/pacman.conf
-          sudo sed -i 's/purge debug/purge !debug' /etc/makepkg.conf
+          sudo sed -i 's/purge debug/purge !debug/g' /etc/makepkg.conf
           sudo pacman -Syy ckbcomp fd git wget ninja qt6-tools base-devel cmake fakeroot github-cli extra-cmake-modules yaml-cpp boost qt5-base qt5-declarative hwinfo python-jsonschema python-yaml solid squashfs-tools qt5-quickcontrols2 qt5-svg qt5-tools qt5-translations qt5-webengine libpwquality libyaml kpmcore kcoreaddons ki18n kconfig kservice kwidgetsaddons kiconthemes kitemviews kxmlgui kbookmarks kcompletion --needed --noconfirm
 
       - name: Create dummy user for makepkg
