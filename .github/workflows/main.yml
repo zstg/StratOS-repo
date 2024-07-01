@@ -35,13 +35,14 @@ jobs:
 
       - name: Build and package software
         run: |
+            dir="$(pwd)"
             PACKAGES=("bibata-cursor-theme" "gruvbox-plus-icon-theme-git" "pandoc-bin" "python-clickgen" "ventoy-bin" "yay-bin") # calamares-git
             for i in "${PACKAGES[@]}"; do
             git clone https://aur.archlinux.org/$i
             sudo chmod -R 777 ./$i
             cd $i
             sudo -u builder makepkg -cf --noconfirm
-            mv *.pkg.tar.zst ../../../x86_64/
+            mv *.pkg.tar.zst $dir/x86_64/
             cd ..
             done
 
